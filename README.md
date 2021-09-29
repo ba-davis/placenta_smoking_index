@@ -2,13 +2,13 @@
 
 Code related to the placenta DNA methylation smoking index project.
 
-EPIC array classification models.   
+**EPIC array classification models**  
   - LASSO regression
   - Elastic Net Regression
   - Random Forest
   - Gradient Boosting Machine   
 
-450k array classification models.
+**450k array classification models**
   - LASSO regression
   - Elastic Net Regression
   - Random Forest
