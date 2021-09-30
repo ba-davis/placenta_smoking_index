@@ -266,33 +266,6 @@ plot_metric_heatmap <- function(df, param1, param2, num_metrics=3,
 
 }
 
-
-#------------------------------------------------------------------------------#
-
-#-----------------------------------------------------------------------#
-# FUNCTION                                                              #
-# "penalized_logreg_var_imp"                                            #
-# function to obtain nonzero cpgs for LASSO or Elastic Net fitted model #
-#-----------------------------------------------------------------------#
-# INPUTS:        mod_fit: a fitted model object
-#      hyperparam_string: string with hyperparameters and values for naming exported file
-#                     id: my_folds$id, passed in via execute_modeling function argument
-penalized_logreg_var_imp <- function(mod_fit, hyperparam_string, id) {
-  # collect variable importance
-  imp_vars <- tidy(mod_fit)
-  # subset to features with nonzero coefficients
-  nonzero_imp_vars <- imp_vars[imp_vars$estimate != 0, ]
-
-  # export variable importance
-  write.table(as.data.frame(nonzero_imp_vars),
-              paste0(hyperparam_string, "_", id, "_nonzero_predictors.txt"),
-              sep="\t",
-              col.names=T,
-              row.names=F,
-              quote=F
-  )
-}
-
 #------------------------------------------------------------------------------#
 
 #-------------------------------------------------------------#
@@ -397,7 +370,88 @@ get_best_hps <- function(df, metric, n) {
   return(df.sub2)
 }
 
-#-----------------------------------------------------------------------------#
+#------------------------------------------------------------------------------#
+
+#-----------------------------------------------------------------------#
+# FUNCTION                                                              #
+# "penalized_logreg_var_imp"                                            #
+# function to obtain nonzero cpgs for LASSO or Elastic Net fitted model #
+#-----------------------------------------------------------------------#
+# INPUTS:        mod_fit: a fitted model object
+#      hyperparam_string: string with hyperparameters and values for naming exported file
+#                     id: my_folds$id, passed in via execute_modeling function argument
+penalized_logreg_var_imp <- function(mod_fit, hyperparam_string, id) {
+  # collect variable importance
+  imp_vars <- tidy(mod_fit)
+  # subset to features with nonzero coefficients
+  nonzero_imp_vars <- imp_vars[imp_vars$estimate != 0, ]
+
+  # export variable importance
+  write.table(as.data.frame(nonzero_imp_vars),
+    paste0(hyperparam_string, "_", id, "_nonzero_predictors.txt"),
+    sep="\t",
+    col.names=T,
+    row.names=F,
+    quote=F
+  )
+}
+
+#--------------------------------------------------------------------------------------------#
+
+#--------------------------------------------------------------------#
+# FUNCTION                                                           #
+# "rf_var_imp"                                                       #
+# function to obtain var importance for random forest fitted model   #
+# currently from the engine "ranger" using "impurity" for importance #
+#--------------------------------------------------------------------#
+# INPUTS:        mod_fit: a fitted model object (random forest)
+#      hyperparam_string: string with hyperparameters and values for naming exported file
+#                     id: my_folds$id, passed in via execute_modeling function argument
+rf_var_imp <- function(mod_fit, hyperparam_string, id) {
+  # gather the ranger object
+  ranger_obj <- mod_fit$fit
+
+  # get variable importance
+  important_vars <- data.frame(CpG=names(ranger_obj$variable.importance),
+    imp=ranger_obj$variable.importance)
+
+  # export the importance for all CpGs for this fold
+  write.table(important_vars,
+    paste0(hyperparam_string, "_", id, "_var_importance.txt"),
+    sep="\t",
+  	col.names=T,
+  	row.names=F,
+  	quote=F
+  )
+}
+
+#--------------------------------------------------------------------------------------------#
+
+#---------------------------------------------------------------------------#
+# FUNCTION                                                                  #
+# "gbm_var_imp"                                                             #
+# function to obtain var importance for gradien boost machine fitted model  #
+# currently from the engine "xgboost"                                       #    
+#---------------------------------------------------------------------------#
+# INPUTS:        mod_fit: a fitted model object (random forest)
+#      hyperparam_string: string with hyperparameters and values for naming exported file
+#                     id: my_folds$id, passed in via execute_modeling function argument
+gbm_var_imp <- function(mod_fit, hyperparam_string, id) {
+  # get variable importance from xgboost fitted model
+  # default for binary logistic regression is logloss (not "error")
+  imp_vars <- xgb.importance(model=mod_fit$fit)
+
+  # export
+  write.table(imp_vars,
+    paste0(hyperparam_string, "_", id, "_var_importance.txt"),
+    sep="\t",
+  	col.names=T,
+  	row.names=F,
+  	quote=F
+  )
+}
+
+#--------------------------------------------------------------------------------------------#
 
 #-------------------------------------------------------------------#
 # FUNCTION                                                          #
@@ -420,7 +474,7 @@ get_best_hps <- function(df, metric, n) {
 #          mod_spec: the model specification object
 #            method: ML method used, for proper variable importance collection
 #                      and export
-#                    one of ("penalized_logreg", "random_forest", "gbm", "svm")
+#                    one of ("penalized_logreg", "random_forest", "gbm")
 #                    penalized_logreg is used for lasso and elastic net
 # hyperparam_string: the string of hyperparam values to be used in file name
 #                      export
@@ -475,18 +529,27 @@ execute_modeling <- function(splits, id, pd, padj=0.05, n=100, rm_cor=TRUE,
 
   #----- Variable Importance -----#
 
-    if (method=="penalized_logreg") {
+  if (method=="penalized_logreg") {
+    print("collecting feature importance for penalized logistic regression model.")
     penalized_logreg_var_imp(mod_fit=mod_fit,
       hyperparam_string=hyperparam_string,
       id=id
     )
   }
-  #else if (method=="random_forest") {
-    # call new rf var imp function
-  #}
-  #else if (method=="gbm") {
-    # call new gbm var imp function
-  #}
+  else if (method=="random_forest") {
+    print("collecting feature importance for random forest model.")
+    rf_var_imp(mod_fit=mod_fit,
+      hyperparam_string=hyperparam_string,
+      id=id
+    )
+  }
+  else if (method=="gbm") {
+    print("collecting feature importance for gradient boost machine model.")
+    gbm_var_imp(mod_fit=mod_fit,
+      hyperparam_string=hyperparam_string,
+      id=id
+    )  
+  }
 
   #----- Store Prediction Results -----#
 
