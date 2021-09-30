@@ -295,10 +295,6 @@ penalized_logreg_var_imp <- function(mod_fit, hyperparam_string, id) {
 
 #------------------------------------------------------------------------------#
 
-
-
-
-
 #-------------------------------------------------------------#
 # FUNCTION                                                    #
 # "plot_three_hyperparams_heatmap"                            #
@@ -449,18 +445,21 @@ execute_modeling <- function(splits, id, pd, padj=0.05, n=100, rm_cor=TRUE,
                           pd=pd
   )
 
-    # pre-process with recipe (which also preps)
-  analysis_prepped <- gen_recipe(df_clean)
+    # pre-process with recipe
+    analysis_prepped <- gen_recipe(df_clean) %>%
+      prep(strings_as_factors = FALSE)
 
   # bake the data
   analysis_baked <- analysis_prepped %>%
     bake(new_data=df_clean)
 
   # fit the input model on pre-processed analysis set
+  # note that we need to exclude our ID variable (Sample_Name)
+  #   because we are not using a workflow()
+  # the fit function doesn't know that the ID column of the tibble has a
+  #   special role
   mod_fit <- mod_spec %>%
-    fit(status ~ ., data=analysis_baked[,!colnames(analysis_baked) %in%
-      c("Sample_Name")]
-    )
+    fit(status ~ ., data=analysis_baked[ ,!(colnames(analysis_baked) %in% "Sample_Name")])
 
   # get assessment set of this split
   assessment_set <- assessment(splits)
@@ -471,17 +470,15 @@ execute_modeling <- function(splits, id, pd, padj=0.05, n=100, rm_cor=TRUE,
   assessment_set_sub <- assessment_set[,colnames(assessment_set) %in%
     colnames(df_clean)]
   # preprocess with same prepped data
-  assessment_prepped <- gen_recipe(assessment_set_sub)
-  # bake
-  assessment_baked <- assessment_prepped %>%
+  assessment_baked <- analysis_prepped %>%
     bake(new_data=assessment_set_sub)
 
   #----- Variable Importance -----#
 
     if (method=="penalized_logreg") {
     penalized_logreg_var_imp(mod_fit=mod_fit,
-                             hyperparam_string=hyperparam_string,
-                             id=id
+      hyperparam_string=hyperparam_string,
+      id=id
     )
   }
   #else if (method=="random_forest") {
@@ -489,9 +486,6 @@ execute_modeling <- function(splits, id, pd, padj=0.05, n=100, rm_cor=TRUE,
   #}
   #else if (method=="gbm") {
     # call new gbm var imp function
-  #}
-  #else if (method="svm") {
-    # call new svm var imp function
   #}
 
   #----- Store Prediction Results -----#
