@@ -611,19 +611,20 @@ execute_modeling <- function(splits, id, pd, padj=0.05, n=100, rm_cor=TRUE,
 # general function to plot barplot of var importance from txt file  #
 #-------------------------------------------------------------------#
 
-# INPUTS: df: a "nonzero_predictors.txt" or "variable_importance.txt" file
-#             must be ordered by descending abs(estimate)
-#             can have Intercept row (will be removed if "Intercept" is present)
-#             assumes 2nd column is desired estimate/importance column
-#   filename: desired name of plot file
-# plot_title: desired plot title
-#  bar_color: desired bar color
+# INPUTS:
+# var_imp_file: a "nonzero_predictors.txt" or "variable_importance.txt" file
+#               must be ordered by descending abs(estimate)
+#               can have Intercept row (will be removed if "Intercept" is present)
+#               assumes 2nd column is desired estimate/importance column
+#     filename: desired name of plot file
+#   plot_title: desired plot title
+#    bar_color: desired bar color
 
-important_cpg_barplot <- function(df, filename="important_cpgss_barplot.png", plot_title="Important CpGs", bar_color="gray") {
+important_cpg_barplot <- function(var_imp_file, filename="important_cpgss_barplot.png", plot_title="Important CpGs", bar_color="gray") {
     # read in important cpgs file ordered by abs(estimate), and
     # remove intercept row if present, and
     # select the top 20 rows (in terms of abs(estimate))
-    df <- read_delim("nCpG_450_lambda_0.000207_nonzero_predictors.txt", delim="\t") %>%
+    df <- read_delim(var_imp_file, delim="\t") %>%
       filter(!grepl('Intercept', term))
 
     # if there are more than 20 rows, filter to top 20
