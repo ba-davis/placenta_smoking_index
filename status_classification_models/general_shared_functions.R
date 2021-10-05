@@ -20,9 +20,11 @@
 #      metric
 # 7. penalized_logreg_var_imp: collect and export variable importance for
 #      lasso and elastic net regression models
-# 8. execute_modeling: general function to perform modeling and assessment on a
-#      CV fold
-
+# 8. rf_var_imp: collect and export variable importance for rf model
+# 9. gbm_var_imp: collect and export variable importance for gbm model
+# 10. execute_modeling: general function to perform modeling and assessment on a
+#       CV fold
+# 11. important_cpg_barplot: plot a barplot of the top 20 CpGs from a var importance txt file
 
 #-----------------------------------------------------------------------------#
 #-------------------------------------------#
@@ -601,4 +603,53 @@ execute_modeling <- function(splits, id, pd, padj=0.05, n=100, rm_cor=TRUE,
 }
 
 
+#--------------------------------------------------------------------------------------------#
 
+#-------------------------------------------------------------------#
+# FUNCTION                                                          #
+# "important_cpg_barplot"                                           #
+# general function to plot barplot of var importance from txt file  #
+#-------------------------------------------------------------------#
+
+# INPUTS: df: a "nonzero_predictors.txt" or "variable_importance.txt" file
+#             must be ordered by descending abs(estimate)
+#             can have Intercept row (will be removed if "Intercept" is present)
+#             assumes 2nd column is desired estimate/importance column
+#   filename: desired name of plot file
+# plot_title: desired plot title
+#  bar_color: desired bar color
+
+important_cpg_barplot <- function(df, filename="important_cpgss_barplot.png", plot_title="Important CpGs", bar_color="gray") {
+    # read in important cpgs file ordered by abs(estimate), and
+    # remove intercept row if present, and
+    # select the top 20 rows (in terms of abs(estimate))
+    df <- read_delim("nCpG_450_lambda_0.000207_nonzero_predictors.txt", delim="\t") %>%
+      filter(!grepl('Intercept', term))
+
+    # if there are more than 20 rows, filter to top 20
+    # assuming data is ordered by descending abs(estimate)
+    if (nrow(df) > 20) {
+      print("Found more than 20 rows, subsetting to first 20.")
+      df <- df %>%
+        slice_head(n = 20)
+    }
+
+    # add an absolute value of estimate column for plotting
+    # (because lasso and elastic net can have negative values)
+    # assumes estimate column is 2nd column
+    df <- df %>%
+      mutate(abs_est = abs(.[[2]]))
+
+    # clean up colnames for plotting
+    colnames(df)[1] <- "term"
+
+    myplot <- ggplot(df, aes(x = reorder(term, -abs_est), y = abs_est)) +
+      labs(x="CpG ID", y="Importance", title=plot_title) +
+      theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+      geom_bar(stat="identity", fill=bar_color) +
+      theme_minimal() +
+      theme(legend.position="none") +
+      theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+      theme(plot.title = element_text(hjust = 0.5))
+    ggsave(filename=filename, plot=myplot)
+}
