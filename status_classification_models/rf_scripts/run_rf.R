@@ -1,8 +1,9 @@
 #!/home/groups/hoolock2/u0/bd/miniconda3/envs/tidymodels/bin/Rscript
 
-########################
-# For LASSO Regression #
-########################
+#################
+# RANDOM FOREST #
+#################
+# Script to perform
 
 # LIBRARIES
 library(tidymodels) # framework for machine learning models
@@ -10,23 +11,26 @@ library(optparse)   # for command line arguments
 library(limma)      # for performing differential analysis on CpG beta values
 library(caret)      # to remove highly correlated sig diff CpGs
 library(tidyverse)  # for manipulations
+library(ranger)     # for random forest engine
 
-#-------------------------------------------------------------------------------------------------------------------#
+#------------------------------------------------------------------------------#
 
-# Source functions
-source("/home/groups/hoolock2/u0/bd/Projects/lyndsey_shorey_project/smoking_index_github/placenta_smoking_index/status_classification_models/general_shared_functions.R")
+source("/home/groups/hoolock2/u0/bd/Projects/lyndsey_shorey_project/\
+  smoking_index_github/placenta_smoking_index/status_classification_models/\
+  general_shared_functions.R"
+)
 
-#-------------------------------------------------------------------------------------------------------------------#
+#------------------------------------------------------------------------------#
 
 # Read in the hyperparameter values from command line
 
 option_list = list(
-  make_option(c("-a", "--hyperparameter1"), type="numeric", default=NULL, 
+  make_option(c("-a", "--hyperparameter1"), type="numeric", default=NULL,
               help="value for hyperparameter1", metavar="character"),
   make_option(c("-b", "--hyperparameter2"), type="numeric", default=NULL,
               help="value for hyperparameter2", metavar="character"),
   make_option(c("-s", "--seed"), type="numeric", default=NULL,
-              help="value for random seed", metavar="character")	      
+              help="value for random seed", metavar="character")
 )
 opt_parser = OptionParser(option_list=option_list)
 opt = parse_args(opt_parser)
@@ -38,21 +42,20 @@ if (is.null(opt$hyperparameter2)){
   print_help(opt_parser)
   stop("Missing hyperparameter2 value.n", call.=FALSE)
 }
-if (is.null(opt$hyperparameter3)){
-  print_help(opt_parser)
-  stop("Missing hyperparameter3 value.n", call.=FALSE)
-}
 if (is.null(opt$seed)){
   print_help(opt_parser)
   stop("Missing random seed value.n", call.=FALSE)
 }
 
 # Store hyperparameter values
-penalty_val <- opt$hyperparameter1
-mixture_val <- opt$hyperparameter2
-nCpG_val <- opt$hyperparameter3
+mtry_val <- opt$hyperparameter1
+min_n_val <- opt$hyperparameter2
 # Store hyperparameter value string for file names
-hyper_string <- paste0("nCpG_", nCpG_val, "_lambda_", penalty_val, "_alpha_", mixture_val)
+hyper_string <- paste0("mtry_", mtry_val, "_minN_", min_n_val)
+
+# Also set hardcoded (not tuning) hyperparam vals
+trees_val <- 400
+nCpG_val <- 100
 
 #-------------------------------------------------------------------------------------------------------------------#
 
@@ -79,14 +82,13 @@ my_folds <- vfold_cv(mydata, strata=status, v=10)
 
 # specify the model with the currently defined hyperparameter(s)
 # here, we get the hyperparameters from the command line options
-mod_spec <- logistic_reg(mode="classification", penalty = penalty_val, mixture = mixture_val) %>%
-    set_engine("glmnet")
-    
+mod_spec <- rand_forest(mode="classification", mtry=mtry_val, trees=trees_val, min_n=min_n_val) %>%
+    set_engine("ranger", importance = 'impurity')
+
 # Create pred_resultsv1 tibble to hold hyperparameter values
 pred_resultsv1 <- tibble(
-    "n_CpG"=nCpG_val,
-    "lambda"=penalty_val,
-    "alpha"=mixture_val
+    "mtry"=mtry_val,
+    "min_n"=min_n_val
 )
 
 #---------------------------------------------------------------------------------------------------------------------#
@@ -95,7 +97,7 @@ pred_resultsv1 <- tibble(
 
 # Map the formula to a dataframe with map2_df
 # perform the modeling and assessment function on each CV split and fold
-# use the 
+# use the
 res <- map2_df(
   .x = my_folds$splits,
   .y = my_folds$id,
@@ -103,10 +105,10 @@ res <- map2_df(
                      id=.y,
 		     pd=pd,
 		     n=nCpG_val,
-		     rm_cor=TRUE,
+		     rm_cor=FALSE,
 		     cor_cutoff=0.75,
 		     mod_spec=mod_spec,
-		     method="penalized_logreg",
+		     method="random_forest",
 		     hyperparam_string=hyper_string,
 		     pred_results=pred_resultsv1)
 )

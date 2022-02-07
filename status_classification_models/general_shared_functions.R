@@ -238,15 +238,23 @@ plot_metric_heatmap <- function(df, param1, param2, num_metrics=3,
   penalty_vals <- num_metrics * nrow(foo)
 
   # Create plot df
-  plotdf <- data.frame(p1=as.factor(as.numeric(formatC(as.numeric(c(rep(
-    foo[[param1]], num_metrics))),format="e", digits=2))),
-    p2=as.factor(as.numeric(formatC(as.numeric(c(rep(
-      foo[[param2]], num_metrics))), format="e", digits=2))),
+  plotdf <- data.frame(p1=as.factor(as.numeric(c(rep(foo[[param1]], num_metrics)))),
+    p2=as.factor(as.numeric(c(rep(foo[[param2]], num_metrics)))),
     metric=c(rep("kap", penalty_vals), rep("accuracy", penalty_vals),
       rep("roc_auc", penalty_vals)),
     mean=c(foo$mean_kap, foo$mean_accuracy, foo$mean_roc_auc),
     std=c(foo$std_kap, foo$std_accuracy, foo$std_roc_auc)
   )
+
+  #plotdf <- data.frame(p1=as.factor(as.numeric(formatC(as.numeric(c(rep(
+  #  foo[[param1]], num_metrics))),format="e", digits=2))),
+  #  p2=as.factor(as.numeric(formatC(as.numeric(c(rep(
+  #    foo[[param2]], num_metrics))), format="e", digits=2))),
+  #  metric=c(rep("kap", penalty_vals), rep("accuracy", penalty_vals),
+  #    rep("roc_auc", penalty_vals)),
+  #  mean=c(foo$mean_kap, foo$mean_accuracy, foo$mean_roc_auc),
+  #  std=c(foo$std_kap, foo$std_accuracy, foo$std_roc_auc)
+  #)
 
   # Plot heatmap for each metric combined in one plot
   ggplot(plotdf, aes(p1, p2, fill=mean)) +
@@ -559,7 +567,7 @@ execute_modeling <- function(splits, id, pd, padj=0.05, n=100, rm_cor=TRUE,
   #   merging
   rep_num <- length(assessment_baked$Sample_Name)
   newtib <- pred_results %>%
-    slice(rep(1:n(), each = rep_num))
+    dplyr::slice(rep(1:n(), each = rep_num))
 
   # Add the prediction results to the input pred_results tibble
   mod_results <- newtib %>%

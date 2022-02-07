@@ -1,0 +1,48 @@
+
+
+
+
+
+
+
+
+# INPUT: colname: name of column in pd to be added to beta matrix (usually the response variable)
+
+prep_input <- function(beta_matrix, pd, colname) {
+  # remove rows from metadata table if the sample is not found as a column in
+  #   the beta matrix
+  coldata <- pd[rownames(pd) %in% colnames(beta_matrix), ]
+
+  # take transpose to put CpGs as columns and samples as rows
+  beta_t <- data.frame(t(beta_matrix))
+
+  # add status column to represent smoking status
+  # first, add Sample_Name to beta_t for merging
+  beta_t$Sample_Name <- rownames(beta_t)
+  beta_t <- cbind(beta_t,
+    coldata[ , colname][match(rownames(beta_t), rownames(coldata))]
+  )
+  colnames(beta_t)[ncol(beta_t)] <- colname
+
+  return(beta_t)
+}
+
+
+
+# Function to prepare a cv split object (from rsample's vfold_cv) by prepping
+#   analysis set for Limma
+#   - remove columns: Sample_Name and status
+#   - transponse to have samples as columns and CpGs as rows
+prep_for_limma2 <- function(splits, colname) {
+  # obtain the data for a split from the analysis set
+  df <- analysis(splits)
+
+  # remove Sample_Name and status
+  df2 <- subset(df, select=-c(Sample_Name, Late_Cotinine_ng_ml))
+
+  # transpose
+  df_t <- as.data.frame(t(df2))
+
+  # return(df_t)
+}
+
