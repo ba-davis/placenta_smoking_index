@@ -25,6 +25,9 @@
 # 10. execute_modeling: general function to perform modeling and assessment on a
 #       CV fold
 # 11. important_cpg_barplot: plot a barplot of the top 20 CpGs from a var importance txt file
+# 12. extract_mean_sd_table: after fitting model and obtaining cpgs with nonzero coefs,
+#       extract the mean and sd of the nonzero coef cpgs from the training data.
+#       This table can then be used to standardize new data when predicting. 
 
 #-----------------------------------------------------------------------------#
 #-------------------------------------------#
@@ -212,8 +215,8 @@ plot_metric_heatmap <- function(df, param1, param2, num_metrics=3,
   myres <- mydf.tib %>%
     group_by(unqID) %>%
     summarize(kap = unique(kap),
-              accuracy = unique(accuracy),
-              roc_auc = unique(roc_auc))
+      accuracy = unique(accuracy),
+      roc_auc = unique(roc_auc))
 
   # create unique key for just the two hyperparameters
   myres$param_key <- gsub("_Fold[0-9]*", "", myres$unqID)
@@ -225,11 +228,11 @@ plot_metric_heatmap <- function(df, param1, param2, num_metrics=3,
   foo <- myres %>%
     group_by(param_key) %>%
     summarize(mean_kap = mean(kap),
-              std_kap = std(kap),
-              mean_accuracy = mean(accuracy),
-              std_accuracy = std(accuracy),
-              mean_roc_auc = mean(roc_auc),
-              std_roc_auc = std(roc_auc))
+      std_kap = std(kap),
+      mean_accuracy = mean(accuracy),
+      std_accuracy = std(accuracy),
+      mean_roc_auc = mean(roc_auc),
+      std_roc_auc = std(roc_auc))
 
   # create a numeric columns containing the value of each hyperparameter
   foo <- foo %>%
@@ -301,8 +304,8 @@ plot_three_hyperparams_heatmap <- function(mytib, p1, p2, p3, metric="kap",
   myres <- mytib %>%
     group_by(unqID) %>%
     summarize(kap = unique(kap),
-              accuracy = unique(accuracy),
-              roc_auc = unique(roc_auc))
+      accuracy = unique(accuracy),
+      roc_auc = unique(roc_auc))
 
 
   # create unique key for just the hyperparameters
@@ -315,11 +318,11 @@ plot_three_hyperparams_heatmap <- function(mytib, p1, p2, p3, metric="kap",
   foo <- myres %>%
     group_by(param_key) %>%
     summarize(mean_kap = mean(kap),
-              std_kap = std(kap),
-              mean_accuracy = mean(accuracy),
-              std_accuracy = std(accuracy),
-              mean_roc_auc = mean(roc_auc),
-              std_roc_auc = std(roc_auc))
+      std_kap = std(kap),
+      mean_accuracy = mean(accuracy),
+      std_accuracy = std(accuracy),
+      mean_roc_auc = mean(roc_auc),
+      std_roc_auc = std(roc_auc))
 
   # create numeric columns containing the value of each hyperparameter
   foo <- foo %>%
@@ -497,21 +500,21 @@ execute_modeling <- function(splits, id, pd, padj=0.05, n=100, rm_cor=TRUE,
 
   # run diff analysis to select top smoking associated CpGs
   df <- find_assoc_features(beta_matrix=limma_input_mat,
-                            pd=pd,
-                            padj=padj,
-                            n=n,
-                            rm_cor=rm_cor,
-                            cor_cutoff=cor_cutoff
+    pd=pd,
+    padj=padj,
+    n=n,
+    rm_cor=rm_cor,
+    cor_cutoff=cor_cutoff
   )
 
   # prepare the format of the subsetted beta matrix for modeling
   df_clean <- prepare_mat(beta_matrix=df,
-                          pd=pd
+    pd=pd
   )
 
-    # pre-process with recipe
-    analysis_prepped <- gen_recipe(df_clean) %>%
-      prep(strings_as_factors = FALSE)
+  # pre-process with recipe
+  analysis_prepped <- gen_recipe(df_clean) %>%
+    prep(strings_as_factors = FALSE)
 
   # bake the data
   analysis_baked <- analysis_prepped %>%
@@ -587,16 +590,16 @@ execute_modeling <- function(splits, id, pd, padj=0.05, n=100, rm_cor=TRUE,
 
   #----- Store Performance Metrics -----#
   my_mets <- tibble("accuracy"=mod_results %>%
-                      metrics(truth, prediction) %>%
-                      filter(.metric == "accuracy") %>%
-                      pull(.estimate),
-                    "kap"=mod_results %>%
-                      metrics(truth, prediction) %>%
-                      filter(.metric == "kap") %>%
-                      pull(.estimate),
-                    "roc_auc"=mod_results %>%
-                      roc_auc(truth, prob_nonsmoker) %>%
-                      pull(.estimate)
+    metrics(truth, prediction) %>%
+    filter(.metric == "accuracy") %>%
+    pull(.estimate),
+    "kap"=mod_results %>%
+    metrics(truth, prediction) %>%
+    filter(.metric == "kap") %>%
+    pull(.estimate),
+    "roc_auc"=mod_results %>%
+    roc_auc(truth, prob_nonsmoker) %>%
+    pull(.estimate)
   )
 
   #----- Combine Prediction Results and Metrics -----#
@@ -629,36 +632,44 @@ execute_modeling <- function(splits, id, pd, padj=0.05, n=100, rm_cor=TRUE,
 #    bar_color: desired bar color
 
 important_cpg_barplot <- function(var_imp_file, filename="important_cpgss_barplot.png", plot_title="Important CpGs", bar_color="gray") {
-    # read in important cpgs file ordered by abs(estimate), and
-    # remove intercept row if present, and
-    # select the top 20 rows (in terms of abs(estimate))
-    df <- read_delim(var_imp_file, delim="\t") %>%
-      filter(!grepl('Intercept', term))
+  # read in important cpgs file ordered by abs(estimate), and
+  # remove intercept row if present, and
+  # select the top 20 rows (in terms of abs(estimate))
+  df <- read_delim(var_imp_file, delim="\t") %>%
+    filter(!grepl('Intercept', term))
 
-    # if there are more than 20 rows, filter to top 20
-    # assuming data is ordered by descending abs(estimate)
-    if (nrow(df) > 20) {
-      print("Found more than 20 rows, subsetting to first 20.")
-      df <- df %>%
-        slice_head(n = 20)
-    }
-
-    # add an absolute value of estimate column for plotting
-    # (because lasso and elastic net can have negative values)
-    # assumes estimate column is 2nd column
+  # if there are more than 20 rows, filter to top 20
+  # assuming data is ordered by descending abs(estimate)
+  if (nrow(df) > 20) {
+    print("Found more than 20 rows, subsetting to first 20.")
     df <- df %>%
-      mutate(abs_est = abs(.[[2]]))
+      slice_head(n = 20)
+  }
 
-    # clean up colnames for plotting
-    colnames(df)[1] <- "term"
+  # add an absolute value of estimate column for plotting
+  # (because lasso and elastic net can have negative values)
+  # assumes estimate column is 2nd column
+  df <- df %>%
+    mutate(abs_est = abs(.[[2]]))
 
-    myplot <- ggplot(df, aes(x = reorder(term, -abs_est), y = abs_est)) +
-      labs(x="CpG ID", y="Importance", title=plot_title) +
-      theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
-      geom_bar(stat="identity", fill=bar_color) +
-      theme_minimal() +
-      theme(legend.position="none") +
-      theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-      theme(plot.title = element_text(hjust = 0.5))
-    ggsave(filename=filename, plot=myplot)
+  # clean up colnames for plotting
+  colnames(df)[1] <- "term"
+
+  myplot <- ggplot(df, aes(x = reorder(term, -abs_est), y = abs_est)) +
+    labs(x="CpG ID", y="Importance", title=plot_title) +
+    theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+    geom_bar(stat="identity", fill=bar_color) +
+    theme_minimal() +
+    theme(legend.position="none") +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+    theme(plot.title = element_text(hjust = 0.5))
+  ggsave(filename=filename, plot=myplot)
 }
+
+#--------------------------------------------------------------------------------------------#
+
+#-------------------------------------------------------------------#
+# FUNCTION                                                          #
+# "extract_mean_sd_table"                                           #
+# general function to plot barplot of var importance from txt file  #
+#-------------------------------------------------------------------#
