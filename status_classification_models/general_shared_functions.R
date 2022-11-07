@@ -718,4 +718,5 @@ extract_mean_sd_table <- function(df_clean=df_clean, nonzero_imp_vars=nonzero_im
     quote=F)
   }
 
+  return(newdf)
 }
