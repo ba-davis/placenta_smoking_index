@@ -671,5 +671,51 @@ important_cpg_barplot <- function(var_imp_file, filename="important_cpgss_barplo
 #-------------------------------------------------------------------#
 # FUNCTION                                                          #
 # "extract_mean_sd_table"                                           #
-# general function to plot barplot of var importance from txt file  #
+# obtain mean and sd of cpgs with nonzero coefs from training data  #
 #-------------------------------------------------------------------#
+
+# INPUTS:
+#         df_clean: training data, rows are samples and columns are cpgs
+#                   rownames and colnames should be present
+# nonzero_imp_vars: dataframe, column "term" is cpgs with nonzero coefs
+#           export: if TRUE (default), export the mean sd cpg table to a txt file
+#          outfile: name of desired output txt file, if export is TRUE
+
+extract_mean_sd_table <- function(df_clean=df_clean, nonzero_imp_vars=nonzero_imp_vars, export=TRUE,
+  outfile="mean_sd_table.txt") {
+
+  # subset df_clean to contain only cpgs with nonzero coefs
+  mydf <- as.data.frame(df_clean[ ,colnames(df_clean) %in% nonzero_imp_vars$term])
+
+  # to clean a df if it only has 1 cpg column
+  if (ncol(mydf)==1) {
+    rownames(mydf) <- rownames(df_clean)
+    colnames(mydf) <- colnames(df_clean)[colnames(df_clean) %in% nonzero_imp_vars$term]
+  }
+
+  # For each nonzero coef cpg in the training data, calculate and store mean and sd
+  mean_vec <- vector()
+  sd_vec <- vector()
+  for (i in 1:ncol(mydf)) {
+    mean_val <- mean(mydf[ ,i])
+    sd_val <- sd(mydf[ ,i])
+    mean_vec <- c(mean_vec, mean_val)
+    sd_vec <- c(sd_vec, sd_val)
+  }
+
+  # create a new df with columns for cpg, mean, and sd
+  newdf <- data.frame(cpg=colnames(mydf),
+    mean=mean_vec,
+    sd=sd_vec)
+
+  # if export is true, write the mean sd cpg table to a txt file
+  if (export==TRUE) {
+    write.table(newdf,
+    outfile,
+    sep="\t",
+    col.names=T,
+    row.names=F,
+    quote=F)
+  }
+
+}
