@@ -34,12 +34,12 @@ source(paste0("/home/groups/hoolock2/u0/bd/Projects/lyndsey_shorey_project/",
 
 # Read in the hyperparameter values from command line
 option_list = list(
-  make_option(c("-a", "--hyperparameter1"), type  = "numeric", default = NULL, 
-              help = "value for hyperparameter1", metavar = "character"),
+  make_option(c("-a", "--hyperparameter1"), type  = "numeric", default = NULL,
+    help = "value for hyperparameter1", metavar = "character"),
   make_option(c("-b", "--hyperparameter2"), type = "numeric", default = NULL,
-              help = "value for hyperparameter2", metavar = "character"),
+    help = "value for hyperparameter2", metavar = "character"),
   make_option(c("-s", "--seed"), type="numeric", default = NULL,
-              help = "value for random seed", metavar = "character")	      
+    help = "value for random seed", metavar = "character")
 )
 opt_parser = OptionParser(option_list = option_list)
 opt = parse_args(opt_parser)
@@ -100,37 +100,37 @@ mod_spec <- logistic_reg(mode = "classification",
 pred_resultsv1 <- tibble(
   "n_CpG" = nCpG_val,
   "lambda" = penalty_val
-)    
+)
 
-#---------------------------------------------------------------------------------------------------------------------#
+#------------------------------------------------------------------------------#
 
 # Perform modeling function using these hyperparameter values
 
 # Map the formula to a dataframe with map2_df
 # perform the modeling and assessment function on each CV split and fold
-# use the 
+# use the
 res <- map2_df(
   .x = my_folds$splits,
   .y = my_folds$id,
   ~ execute_modeling(split = .x,
     id = .y,
-		pd = pd,
-		n = nCpG_val,
-		rm_cor = TRUE,
-		cor_cutoff = 0.75,
-		mod_spec = mod_spec,
-		method = "penalized_logreg",
-		hyperparam_string = hyper_string,
-		pred_results = pred_resultsv1)
+    pd = pd,
+    n = nCpG_val,
+    rm_cor = TRUE,
+    cor_cutoff = 0.75,
+    mod_spec = mod_spec,
+    method = "penalized_logreg",
+    hyperparam_string = hyper_string,
+    pred_results = pred_resultsv1)
 )
 
 # export results df
 write.table(as.data.frame(res),
   paste0("results_", hyper_string, ".txt"),
-	sep = "\t",
-	col.names = T,
-	row.names = F,
-	quote = F
+  sep = "\t",
+  col.names = T,
+  row.names = F,
+  quote = F
 )
 
 print("SESSION_INFO")
