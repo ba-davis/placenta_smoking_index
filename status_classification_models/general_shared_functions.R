@@ -243,8 +243,8 @@ plot_metric_heatmap <- function(df, param1, param2, num_metrics=3,
   # Create plot df
   plotdf <- data.frame(p1=as.factor(as.numeric(c(rep(foo[[param1]], num_metrics)))),
     p2=as.factor(as.numeric(c(rep(foo[[param2]], num_metrics)))),
-    metric=c(rep("kap", penalty_vals), rep("accuracy", penalty_vals),
-      rep("roc_auc", penalty_vals)),
+    metric=c(rep("kap", nrow(foo)), rep("accuracy", nrow(foo)),
+      rep("roc_auc", nrow(foo))),
     mean=c(foo$mean_kap, foo$mean_accuracy, foo$mean_roc_auc),
     std=c(foo$std_kap, foo$std_accuracy, foo$std_roc_auc)
   )
