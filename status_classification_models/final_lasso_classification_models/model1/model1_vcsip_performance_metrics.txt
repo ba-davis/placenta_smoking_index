@@ -1,0 +1,2 @@
+accuracy	sensitivity	specificity	kap	roc_auc	p_auc
+1	1	1	1	1	0.1
