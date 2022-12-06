@@ -1,0 +1,46 @@
+#!/home/groups/hoolock2/u0/bd/miniconda3/envs/tidymodels/bin/Rscript
+
+library(tidyverse)
+library(vroom)
+
+#-------------------------------------------------------------------------------------------------------------------#
+
+# Source functions
+source(paste0("/home/groups/hoolock2/u0/bd/Projects/lyndsey_shorey_project/",
+  "smoking_index_github/placenta_smoking_index/status_classification_models/",
+  "general_shared_functions.R")
+)
+
+#-------------------------------------------------------------------------------------------------------------------#
+
+# path to folder containing performance metrics txt files
+dir = getwd()
+
+# read in all perormance metric df's
+mydf <- vroom(list.files(dir, pattern="^results_", full=TRUE))
+
+
+# Plot performance metric average for each hyperparameter combo
+
+outplot_name <- "rf_hyperparam_heatmap.png"
+outfile_name <- "rf_hyperparam_heatmap.txt"
+
+metric_df <- plot_metric_heatmap(df=mydf,
+                                 param1="mtry",
+		                 param2="min_n",
+		                 num_metrics=3,
+		                 plotfile=outplot_name,
+		                 output_df=TRUE,
+		                 outfile=outfile_name
+)
+
+# get best performing hyperparams
+kap_metrics <- get_best_hps(metric_df, "kap", 5)
+
+write.table(kap_metrics,
+            "best_kap_hyperparams_table.txt",
+	    sep="\t",
+	    col.names=T,
+	    row.names=F,
+	    quote=F
+)

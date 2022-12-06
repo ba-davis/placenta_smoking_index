@@ -1,0 +1,2 @@
+IlmnID	estimate	CHR	MAPINFO	gene	feat.cgi	SNP_DISTANCE	name	description	distance
+cg27402634	-0.265695899915776	3	156536860		IGR-shore	12;50	LINC00886	promoter	2008
