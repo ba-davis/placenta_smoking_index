@@ -57,7 +57,7 @@ venn.plot <- draw.triple.venn(area1 = length(mod1),
   lty = "blank",
   main=title)
 
-pdf("shared_cpgs_5models_venn.pdf")
+pdf("shared_cpgs_3models_venn.pdf")
 grid.draw(venn.plot)
 dev.off()
 
