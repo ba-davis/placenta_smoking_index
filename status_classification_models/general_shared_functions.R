@@ -593,6 +593,12 @@ execute_modeling <- function(splits, id, pd, padj=0.05, n=100, rm_cor=TRUE,
     metrics(truth, prediction) %>%
     filter(.metric == "accuracy") %>%
     pull(.estimate),
+    "sensitivity"=mod_results %>%
+    sens(truth, prediction) %>%
+    pull(.estimate),
+    "specificity"=mod_results %>%
+    yardstick::spec(truth, prediction) %>%
+    pull(.estimate),
     "kap"=mod_results %>%
     metrics(truth, prediction) %>%
     filter(.metric == "kap") %>%
@@ -607,8 +613,11 @@ execute_modeling <- function(splits, id, pd, padj=0.05, n=100, rm_cor=TRUE,
   # add metrics to results tibble
   my_res <- mod_results %>%
     add_column(accuracy=my_mets$accuracy) %>%
+    add_column(sensitivity=my_mets$sensitivity) %>%
+    add_column(specificity=my_mets$specificity) %>%
     add_column(kap=my_mets$kap) %>%
     add_column(roc_auc=my_mets$roc_auc)
+    
 
   return(my_res)
 }
