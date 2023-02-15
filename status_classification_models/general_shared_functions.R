@@ -605,9 +605,12 @@ execute_modeling <- function(splits, id, pd, padj=0.05, n=100, rm_cor=TRUE,
     pull(.estimate),
     "roc_auc"=mod_results %>%
     roc_auc(truth, prob_nonsmoker) %>%
-    pull(.estimate)
+    pull(.estimate),
+    "pAUC"=pROC::auc(mod_results$truth, mod_results$prob_nonsmoker,
+    percent = FALSE, partial.auc = c(1, 0.9),
+    partial.auc.correct = TRUE)[1]
   )
-
+  
   #----- Combine Prediction Results and Metrics -----#
 
   # add metrics to results tibble
@@ -616,7 +619,8 @@ execute_modeling <- function(splits, id, pd, padj=0.05, n=100, rm_cor=TRUE,
     add_column(sensitivity=my_mets$sensitivity) %>%
     add_column(specificity=my_mets$specificity) %>%
     add_column(kap=my_mets$kap) %>%
-    add_column(roc_auc=my_mets$roc_auc)
+    add_column(roc_auc=my_mets$roc_auc) %>%
+    add_column(pauc=my_mets$pAUC)
     
 
   return(my_res)
