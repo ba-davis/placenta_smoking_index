@@ -50,6 +50,14 @@ metric_df <- plot_metric_heatmap(df=mydf,
 		                 outfile=outfile_name
 )
 
+# export the cv hyper tuning performance metrics
+write.table(metric_df,
+  "pace_lasso_hyper_tuning_metrics.txt",
+  sep="\t",
+  col.names=T,
+  row.names=F,
+  quote=F)
+  
 # get best performing hyperparams
 lasso_kap_metrics <- get_best_hps(metric_df, "kap", 5)
 # Ensure no duplicates

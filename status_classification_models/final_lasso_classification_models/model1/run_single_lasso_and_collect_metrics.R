@@ -126,6 +126,8 @@ write.table(newdf,
   row.names=F,
   quote=F)
 
+#------------------------#
+
 # export all imp vars (102 cpgs + intercept)
 write.table(imp_vars,
   "imp_vars.txt",
@@ -160,6 +162,26 @@ important_cpg_barplot(var_imp_file = paste0(hyper_string, "_nonzero_predictors.t
 
 #------------------------------------#
 
+# subset a vcsip beta matrix of nonzero cpgs
+mydf <- df_clean[ ,colnames(df_clean) %in% nonzero_imp_vars$term]
+write.table(mydf,
+  "model1.vcsip.raw_beta_matrix.txt",
+  sep="\t",
+  col.names=T,
+  row.names=T,
+  quote=F)
+
+# subset the normalized vcsip beta matrix of nonzero cpgs
+mydfnorm <- analysis_baked[ ,colnames(analysis_baked) %in% nonzero_imp_vars$term]
+write.table(mydfnorm,
+  "model1.vcsip.norm_beta_matrix.txt",
+  sep="\t",
+  col.names=T,
+  row.names=T,
+  quote=F)
+
+#------------------------------------#
+
 # predict and store predictions in a new dataframe
 pred_res <- data.frame(Sample_Name=analysis_baked$Sample_Name,
   status=analysis_baked$status) %>%
@@ -169,6 +191,14 @@ pred_res <- data.frame(Sample_Name=analysis_baked$Sample_Name,
   unlist()) %>%
   add_column("prob_smoker" = predict(lasso_fit, analysis_baked, type = "prob")[,2] %>%
   unlist())
+
+# export for future reference
+write.table(pred_res,
+  "model1.prediction_table.txt",
+  sep="\t",
+  col.names=T,
+  row.names=F,
+  quote=F)
 
 # convert the "truth" (status) to factor
 pred_res$status <- as.factor(pred_res$status)

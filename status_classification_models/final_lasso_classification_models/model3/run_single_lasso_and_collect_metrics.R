@@ -178,6 +178,14 @@ pred_res <- data.frame(Sample_Name=analysis_baked$Sample_Name,
   add_column("prob_smoker" = predict(lasso_fit, analysis_baked, type = "prob")[,2] %>%
   unlist())
 
+# export for future reference
+write.table(pred_res,
+  "model3.prediction_table.txt",
+  sep="\t",
+  col.names=T,
+  row.names=F,
+  quote=F)
+  
 # convert the "truth" (status) to factor
 pred_res$status <- as.factor(pred_res$status)
 
