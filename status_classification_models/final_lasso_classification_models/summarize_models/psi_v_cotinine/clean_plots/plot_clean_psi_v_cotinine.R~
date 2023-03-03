@@ -1,0 +1,23 @@
+
+# conda activate tidymodels
+
+library(tidyverse)
+library(ggrepel)
+source("")
+
+# read in the pd file
+pd <- read.delim(paste0("/home/groups/hoolock2/u0/bd/Projects/",
+  "lyndsey_shorey_project/prelim_data/cleaned_data/pd.txt"))
+
+# read in the cotinine metadata
+cotinine_dat <- read.delim(paste0("/home/groups/hoolock2/u0/bd/Projects/",
+    "lyndsey_shorey_project/metadata/Cotinine_ng_ml_pd.txt"), header=T)
+colnames(cotinine_dat)[1] <- "Sample_Name"
+
+# read in the d2 file showing psi score per sample
+mypath <- paste0("/home/groups/hoolock2/u0/bd/Projects/",
+  "lyndsey_shorey_project/classification_models/fall_2022_final_models/",
+  "summarize_models/psi_scores")
+
+#--------------------------------------------------------------------#
+
