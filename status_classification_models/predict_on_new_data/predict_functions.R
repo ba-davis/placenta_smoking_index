@@ -9,17 +9,27 @@ norm_betas <- function(beta_sub, mytab) {
     # centering (subtract the mean from each cpg) and
     # scaling (divide by standard deviation)
 
-    # for each column in the input beta matrix
+    # subset ref table mytab to contain only cpgs found in beta_sub
+    mytab_sub <- mytab[mytab$cpg %in% colnames(beta_sub), ]
+    beta_sub <- beta_sub[, match(mytab_sub$cpg, colnames(beta_sub))]
+
+    # sanity check
+    if (!(identical(colnames(beta_sub), mytab_sub$cpg))) {
+    print(paste0("WARNING: cpgs are not in proper order.",
+    " Problem with PSI calculation."))
+    }
+
+    # for each cpg/column in the input beta matrix
     #   - subtract the mean for that cpg in mytab from
     #     each row in the cpg column in user input beta matrix.
     #   - Then, divide this new value by the sd value for the cpg
     for (i in seq_len(ncol(beta_sub))) {
         # subtract the mean
         beta_sub[[colnames(beta_sub)[i]]] <- beta_sub[[colnames(beta_sub)[i]]] -
-        mytab[mytab$cpg == colnames(beta_sub)[i], "mean"]
+        mytab_sub[mytab_sub$cpg == colnames(beta_sub)[i], "mean"]
         # divide by the standard deviation
         beta_sub[[colnames(beta_sub)[i]]] <- beta_sub[[colnames(beta_sub)[i]]] /
-        mytab[mytab$cpg == colnames(beta_sub)[i], "sd"]
+        mytab_sub[mytab_sub$cpg == colnames(beta_sub)[i], "sd"]
     }
 
     return(beta_sub)
@@ -33,16 +43,18 @@ calculate_psi <- function(beta_sub, mytab) {
     # put the cpg rows of transposed beta_sub in the same order as
     # the cpg rows in ref table mytab$cpg
     B <- t(beta_sub)
-    B <- B[match(mytab$cpg, rownames(B)), ]
+    # subset ref table mytab to contain only cpgs found in beta_sub
+    mytab_sub <- mytab[mytab$cpg %in% rownames(B), ]
+    B <- B[match(mytab_sub$cpg, rownames(B)), ]
     # sanity check
-    if (!(identical(rownames(B), mytab$cpg))) {
+    if (!(identical(rownames(B), mytab_sub$cpg))) {
     print(paste0("WARNING: cpgs are not in proper order.",
     " Problem with PSI calculation."))
     }
 
     y <- NULL
     i <- NULL
-    A <- mytab$estimate
+    A <- mytab_sub$estimate
     y <- matrix(nrow = nrow(B), ncol = ncol(B))
     # for each row (cpg) of B, multiply the entire row by
     #   the coefficient for that cpg
@@ -88,10 +100,12 @@ predict_on_new_data <- function(input_beta, mytab, prob_cutoff = 0.5) {
     beta_sub <- input_beta[, colnames(input_beta) %in% mytab$cpg]
 
     # Calculate PSI from unnormalized beta matrix
+    print("Calculating PSI.")
     d2 <- calculate_psi(beta_sub, mytab)
     colnames(d2) <- c("sample", "psi")
 
     # normalize the beta matrix according to training data
+    print("Normalizing betas.")
     beta_norm <- norm_betas(beta_sub, mytab)
 
     # Calculate PSI score from the normalized betas
