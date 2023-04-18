@@ -79,12 +79,13 @@ logit2prob <- function(logit){
 # take input beta matrix and predict to get output summary table
 # input_beta: samples as rows, cpgs as columns
 #             samples are rownames(beta_sub), no sample column
-# mytab: model reference table with cols <cpg> <estimate> <mean> <sd> <y_int>
+# mytab: model reference table with cols:
+#        <cpg> <estimate> <mean> <weighted_mean> <sd> <y_int>
 #
 # returns output df of results with columns:
 #   <sample> <psi> <norm_psi> <logit_prob>
 #     <probability_smoker> <probability_nonsmoker>
-predict_on_new_data <- function(input_beta, mytab, prob_cutoff = 0.5) {
+predict_on_new_data <- function(input_beta, mytab, fill_missing_cpgs = TRUE, prob_cutoff = 0.5) {
     # check how many of the required cpgs for the model are present as columns
     # in user input beta matrix
     print("Checking input CpGs for those required by the model.")
@@ -98,6 +99,16 @@ predict_on_new_data <- function(input_beta, mytab, prob_cutoff = 0.5) {
 
     # subset input beta matrix to contain only present required cpgs
     beta_sub <- input_beta[, colnames(input_beta) %in% mytab$cpg]
+
+    # if you want to use weighted mean values for missing cpgs...
+    # add the weighted mean beta values for the missing cpgs
+    if (fill_missing_cpgs == TRUE) {
+        print("Using weighted mean values for missing cpgs.")
+        missing_cpgs <- mytab$cpg[!(mytab$cpg %in% colnames(beta_sub))]
+        for (i in seq_along(missing_cpgs)) {
+            beta_sub[[missing_cpgs[i]]] <- mytab$weighted_mean[mytab$cpg == missing_cpgs[i]]
+        }
+    }
 
     # Calculate PSI from unnormalized beta matrix
     print("Calculating PSI.")
